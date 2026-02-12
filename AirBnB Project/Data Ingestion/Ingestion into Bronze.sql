@@ -1,0 +1,26 @@
+USE DATABASE HMS;
+
+USE SCHEMA BRONZE;
+
+LIST @EXT_HMS_FILES;
+
+---Booking File Load
+
+COPY INTO BOOKINGS
+FROM '@EXT_HMS_FILES/bookings.csv';
+
+SELECT * FROM BOOKINGS;
+
+---Hosts File load
+
+COPY INTO HOSTS
+FROM '@EXT_HMS_FILES/hosts.csv';
+
+SELECT * FROM HOSTS;
+
+---Listings File load
+
+COPY INTO LISTINGS
+FROM '@EXT_HMS_FILES/listings.csv';
+
+SELECT * FROM LISTINGS;
