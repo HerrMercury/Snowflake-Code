@@ -1,26 +1,26 @@
-USE DATABASE HMS;
+USE DATABASE AIRBNB;
 
 USE SCHEMA STAGING;
 
-LIST @EXT_HMS_FILES;
+LIST @INT_SRC_FILES;
 
 ---Booking File Load
 
 COPY INTO BOOKINGS
-FROM '@EXT_HMS_FILES/bookings.csv';
+FROM '@INT_SRC_FILES/bookings.csv';
 
 SELECT * FROM BOOKINGS;
 
 ---Hosts File load
 
 COPY INTO HOSTS
-FROM '@EXT_HMS_FILES/hosts.csv';
+FROM '@INT_SRC_FILES/hosts.csv';
 
 SELECT * FROM HOSTS;
 
 ---Listings File load
 
 COPY INTO LISTINGS
-FROM '@EXT_HMS_FILES/listings.csv';
+FROM '@INT_SRC_FILES/listings.csv';
 
 SELECT * FROM LISTINGS;
