@@ -1,0 +1,27 @@
+name: "airbnb_medallion"
+version: "1.0.0"
+config-version: 2
+
+profile: "Snowflake_Code"
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+analysis-paths: ["analyses"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  airbnb_medallion:
+    bronze:
+      +schema: BRONZE
+      +materialized: view
+    silver:
+      +schema: SILVER
+      +materialized: view
+    gold:
+      +schema: GOLD
+      +materialized: table

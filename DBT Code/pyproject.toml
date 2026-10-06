@@ -1,0 +1,16 @@
+[project]
+name = "dbt-code"
+version = "0.1.0"
+description = "dbt project implementing the Bronze/Silver/Gold medallion architecture for the AIRBNB database in Snowflake"
+readme = "README.md"
+authors = [
+    { name = "HerrMercury", email = "srajaneni12@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "dbt-core==1.11.*",
+    "dbt-snowflake==1.11.*",
+]
+
+[tool.uv]
+package = false

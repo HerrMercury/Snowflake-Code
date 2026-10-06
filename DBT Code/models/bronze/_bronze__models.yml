@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: bronze_hosts
+    description: Light-cleaned hosts, one row per source row. Trims strings, drops rows with no host_id.
+    columns:
+      - name: host_id
+        tests:
+          - not_null
+          - unique
+
+  - name: bronze_listings
+    description: Light-cleaned listings, one row per source row. Trims strings, drops rows with no listing_id/host_id or a negative price.
+    columns:
+      - name: listing_id
+        tests:
+          - not_null
+          - unique
+      - name: host_id
+        tests:
+          - not_null
+
+  - name: bronze_bookings
+    description: Light-cleaned bookings, one row per source row. Trims/lowercases booking_status, drops rows with no booking_id/listing_id, zero/negative nights, or a negative amount.
+    columns:
+      - name: booking_id
+        tests:
+          - not_null
+          - unique
+      - name: listing_id
+        tests:
+          - not_null

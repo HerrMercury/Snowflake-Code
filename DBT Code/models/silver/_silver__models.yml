@@ -1,0 +1,42 @@
+version: 2
+
+models:
+  - name: silver_hosts
+    description: Conformed hosts, one row per host_id. Adds host_tenure_days.
+    columns:
+      - name: host_id
+        tests:
+          - not_null
+          - unique
+
+  - name: silver_listings
+    description: Listings with their host attributes attached. Grain is one row per listing.
+    columns:
+      - name: listing_id
+        tests:
+          - not_null
+          - unique
+      - name: host_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('silver_hosts')
+                field: host_id
+              config:
+                severity: warn
+
+  - name: silver_bookings
+    description: Bookings with their listing's host/location attached, plus a computed total_amount. Grain is one row per booking.
+    columns:
+      - name: booking_id
+        tests:
+          - not_null
+          - unique
+      - name: listing_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('silver_listings')
+                field: listing_id
+              config:
+                severity: warn
