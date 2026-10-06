@@ -1,0 +1,57 @@
+version: 2
+
+models:
+  - name: dim_hosts
+    description: Host dimension. One row per host.
+    columns:
+      - name: host_id
+        tests:
+          - not_null
+          - unique
+
+  - name: dim_listings
+    description: Listing dimension, with host_id as a foreign key to dim_hosts. One row per listing.
+    columns:
+      - name: listing_id
+        tests:
+          - not_null
+          - unique
+      - name: host_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_hosts')
+                field: host_id
+              config:
+                severity: warn
+
+  - name: fct_bookings
+    description: Booking fact table, grain is one row per booking. Foreign keys to dim_listings and dim_hosts.
+    columns:
+      - name: booking_id
+        tests:
+          - not_null
+          - unique
+      - name: listing_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_listings')
+                field: listing_id
+              config:
+                severity: warn
+      - name: host_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_hosts')
+                field: host_id
+              config:
+                severity: warn
+      - name: booking_status
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['confirmed', 'cancelled']
+              config:
+                severity: warn

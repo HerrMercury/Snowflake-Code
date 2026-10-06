@@ -1,0 +1,29 @@
+version: 2
+
+sources:
+  - name: airbnb_staging
+    database: AIRBNB
+    schema: STAGING
+    description: Raw tables loaded as-is from the INT_SRC_FILES stage via COPY INTO.
+    tables:
+      - name: hosts
+        description: One row per host, as landed from hosts.csv.
+        columns:
+          - name: host_id
+            tests:
+              - not_null
+              - unique
+      - name: listings
+        description: One row per listing, as landed from listings.csv.
+        columns:
+          - name: listing_id
+            tests:
+              - not_null
+              - unique
+      - name: bookings
+        description: One row per booking, as landed from bookings.csv.
+        columns:
+          - name: booking_id
+            tests:
+              - not_null
+              - unique
