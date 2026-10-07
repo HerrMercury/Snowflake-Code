@@ -8,5 +8,6 @@ select
     accommodates,
     bedrooms,
     bathrooms,
-    price_per_night
+    price_per_night,
+    {{ loaded_at_column('gold') }}
 from {{ ref('silver_listings') }}

@@ -14,7 +14,8 @@ cleaned as (
         bedrooms,
         bathrooms,
         price_per_night,
-        created_at
+        created_at,
+        {{ loaded_at_column('bronze') }}
     from source
     where listing_id is not null
       and host_id is not null

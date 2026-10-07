@@ -9,7 +9,8 @@ cleaned as (
         host_since,
         is_superhost,
         response_rate,
-        created_at
+        created_at,
+        {{ loaded_at_column('bronze') }}
     from source
     where host_id is not null
 )

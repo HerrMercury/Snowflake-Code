@@ -1,3 +1,10 @@
+{{
+    config(
+        materialized='incremental',
+        unique_key='booking_id'
+    )
+}}
+
 select
     booking_id,
     listing_id,
@@ -9,5 +16,9 @@ select
     service_fee,
     total_amount,
     booking_status,
-    created_at
+    created_at,
+    {{ loaded_at_column('gold') }}
 from {{ ref('silver_bookings') }}
+{% if is_incremental() %}
+where created_at > (select max(created_at) from {{ this }})
+{% endif %}
