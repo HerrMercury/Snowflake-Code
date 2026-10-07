@@ -18,10 +18,10 @@ models:
   airbnb_medallion:
     bronze:
       +schema: BRONZE
-      +materialized: view
+      +materialized: table
     silver:
       +schema: SILVER
-      +materialized: view
+      +materialized: table
     gold:
       +schema: GOLD
       +materialized: table

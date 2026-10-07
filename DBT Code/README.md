@@ -8,12 +8,18 @@ discussion and decisions log.
 
 ```
 models/
-  bronze/   views, light-cleaned 1:1 copies of the AIRBNB.STAGING source tables
-  silver/   views, joined/conformed business entities (host attached to listing, etc.)
+  bronze/   tables, light-cleaned 1:1 copies of the AIRBNB.STAGING source tables
+  silver/   tables, joined/conformed business entities (host attached to listing, etc.)
   gold/     tables, dimensional model (dim_hosts, dim_listings, fct_bookings)
 macros/
   generate_schema_name.sql   routes models to BRONZE/SILVER/GOLD exactly (no schema prefix)
+  audit_columns.sql          loaded_at_column(layer) macro, used by every model
 ```
+
+Every model is `materialized='table'` (full rebuild each run) except the bookings pipeline
+(`bronze_bookings` → `silver_bookings` → `fct_bookings`), which is `materialized='incremental'`
+keyed on `booking_id` — re-runs only pick up rows with a newer `created_at` than what's already
+in the table. Run `dbt run --full-refresh` to force those three back to a full rebuild.
 
 ## Setup
 

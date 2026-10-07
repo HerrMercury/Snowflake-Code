@@ -1,5 +1,15 @@
+{{
+    config(
+        materialized='incremental',
+        unique_key='booking_id'
+    )
+}}
+
 with bookings as (
     select * from {{ ref('bronze_bookings') }}
+    {% if is_incremental() %}
+    where created_at > (select max(created_at) from {{ this }})
+    {% endif %}
 ),
 
 listings as (
@@ -20,7 +30,8 @@ joined as (
         bookings.service_fee,
         bookings.booking_amount + bookings.cleaning_fee + bookings.service_fee as total_amount,
         bookings.booking_status,
-        bookings.created_at
+        bookings.created_at,
+        {{ loaded_at_column('silver') }}
     from bookings
     left join listings
         on bookings.listing_id = listings.listing_id

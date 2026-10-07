@@ -48,9 +48,12 @@ model *and* an aggregate mart, or just one?).
   `AIRBNB.BRONZE` / `.SILVER` / `.GOLD` exactly, not `dbt_schema_bronze` etc.
 - **Gold scope**: dimensional model only (`dim_hosts`, `dim_listings`, `fct_bookings`). No pre-aggregated
   mart yet — add one later if a reporting need shows up.
-- **Materialization**: bronze = view, silver = view, gold = table (set per-folder in `dbt_project.yml`).
-  Bronze/silver stay views since the data volume is small and they're cheap to recompute; gold is
-  materialized as a table for downstream BI performance.
+- **Materialization**: bronze = table, silver = table, gold = table (set per-folder in `dbt_project.yml`).
+  Originally bronze/silver were views, but that breaks the audit columns: `current_timestamp()` in a view
+  re-evaluates on every query (query time, not transformation time), so `bronze_loaded_at`/`silver_loaded_at`
+  would drift every time the view was read. Materializing all three layers as tables means
+  `current_timestamp()` is captured once per `dbt run`/`build`, giving consistent "last built" semantics
+  across bronze/silver/gold.
 - **Grain / joins**: host↔listing join happens in Silver (`silver_listings`), listing↔booking join also in
   Silver (`silver_bookings`, which also derives `total_amount`). Gold tables are a thin select from Silver
   with only the columns needed for the dimensional model — descriptive attributes live on the dimensions,
@@ -61,6 +64,22 @@ model *and* an aggregate mart, or just one?).
   FKs) at silver and gold, set to `severity: warn` rather than `error` since the sample data's referential
   integrity isn't guaranteed to hold forever; `accepted_values` on `fct_bookings.booking_status`
   (`confirmed`/`cancelled`, the only two values present in the sample data).
+- **Incremental loading**: `bronze_bookings` → `silver_bookings` → `fct_bookings` are
+  `materialized='incremental'` with `unique_key='booking_id'`, filtered on the source `created_at`
+  watermark (`where created_at > (select max(created_at) from {{ this }})` inside `is_incremental()`).
+  Bookings are append-heavy (a `booking_id`, once created, doesn't change in this dataset) so re-runs only
+  process new rows instead of rebuilding 5,000 rows every time. Hosts/listings stay full-refresh tables at
+  every layer — smaller, more dimension-like, simpler to just rebuild. Caveat: since there's no
+  `updated_at` on bookings, a status change on an already-loaded booking without a new `created_at`
+  wouldn't be re-picked up — fine for this append-only sample dataset, would need a real watermark column
+  if the source ever supports updates. Use `dbt run --full-refresh` to force a full rebuild.
+- **Audit columns**: every model stamps one metadata column for its own layer —
+  `bronze_loaded_at`, `silver_loaded_at`, `gold_loaded_at` — via the shared `loaded_at_column(layer)`
+  macro (`macros/audit_columns.sql`), value `current_timestamp()`. Each layer only adds its own column
+  (no carrying upstream layers' timestamps through joins) to avoid name collisions when a model joins
+  two upstream entities (e.g. `silver_listings` joining `bronze_listings` + `silver_hosts`). All three
+  layers are now tables (see materialization decision above), so every `_loaded_at` column is frozen at
+  the last `dbt run`/`build`, not query time.
 - **Toolchain**: pinned `dbt-core`/`dbt-snowflake` to `1.11.x` in `DBT Code/pyproject.toml`. The `1.12.5`
   release pulled in a broken `metricflow` package (`ModuleNotFoundError` on
   `metricflow_semantic_interfaces...`) that breaks `dbt run`/`build` entirely — a known issue with that
@@ -68,17 +87,17 @@ model *and* an aggregate mart, or just one?).
 
 ## Models built so far
 
-| Layer | Model name | Grain | Status |
-|---|---|---|---|
-| Bronze | `bronze_hosts` | 1 row per host | Built |
-| Bronze | `bronze_listings` | 1 row per listing | Built |
-| Bronze | `bronze_bookings` | 1 row per booking | Built |
-| Silver | `silver_hosts` | 1 row per host | Built |
-| Silver | `silver_listings` | 1 row per listing, host attached | Built |
-| Silver | `silver_bookings` | 1 row per booking, listing/host attached, `total_amount` computed | Built |
-| Gold | `dim_hosts` | 1 row per host | Built |
-| Gold | `dim_listings` | 1 row per listing | Built |
-| Gold | `fct_bookings` | 1 row per booking | Built |
+| Layer | Model name | Grain | Materialization | Status |
+|---|---|---|---|---|
+| Bronze | `bronze_hosts` | 1 row per host | table | Built |
+| Bronze | `bronze_listings` | 1 row per listing | table | Built |
+| Bronze | `bronze_bookings` | 1 row per booking | incremental | Built |
+| Silver | `silver_hosts` | 1 row per host | table | Built |
+| Silver | `silver_listings` | 1 row per listing, host attached | table | Built |
+| Silver | `silver_bookings` | 1 row per booking, listing/host attached, `total_amount` computed | incremental | Built |
+| Gold | `dim_hosts` | 1 row per host | table | Built |
+| Gold | `dim_listings` | 1 row per listing | table | Built |
+| Gold | `fct_bookings` | 1 row per booking | incremental | Built |
 
 All 9 models + 32 data tests pass against the live `AIRBNB` database (`dbt build`), confirming the sample
 data's host_id/listing_id referential integrity is intact (200 hosts, 500 listings, 5,000 bookings).

@@ -4,5 +4,6 @@ select
     host_since,
     is_superhost,
     response_rate,
-    host_tenure_days
+    host_tenure_days,
+    {{ loaded_at_column('gold') }}
 from {{ ref('silver_hosts') }}

@@ -20,7 +20,8 @@ joined as (
         listings.bedrooms,
         listings.bathrooms,
         listings.price_per_night,
-        listings.created_at
+        listings.created_at,
+        {{ loaded_at_column('silver') }}
     from listings
     left join hosts
         on listings.host_id = hosts.host_id
